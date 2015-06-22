@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="UTF-8">
+    <title>Machinelearning by aespinel</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="stylesheets/normalize.css" media="screen">
+    <link href='http://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
+  </head>
+  <body>
+    <section class="page-header">
+      <h1 class="project-name">Machinelearning</h1>
+      <h2 class="project-tagline"></h2>
+      <a href="https://github.com/aespinel/MachineLearning" class="btn">View on GitHub</a>
+      <a href="https://github.com/aespinel/MachineLearning/zipball/master" class="btn">Download .zip</a>
+      <a href="https://github.com/aespinel/MachineLearning/tarball/master" class="btn">Download .tar.gz</a>
+    </section>
+
+    <section class="main-content">
+      <p>&lt;!DOCTYPE html&gt;</p>
+
+<p></p>
+
+<p></p>
+
+<p>
+
+</p>
+
+<p></p>
+
+<p></p>
+
+<p></p>Practical Machine Learning Project: Weight Lifting Exercises Activity Recognition Analysis
+
+
+
+<p>
+</p>
+
+
+
+
+
+
+
+code{white-space: pre;}
+
+<p></p>
+
+
+
+
+  pre:not([class]) {
+    background-color: white;
+  }
+
+
+
+
+<p></p>
+
+<p></p>
+
+
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+code {
+  color: inherit;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+img { 
+  max-width:100%; 
+  height: auto; 
+}
+
+
+<div>
+
+
+<div id="header">
+<h1>
+<a id="practical-machine-learning-project-weight-lifting-exercises-activity-recognition-analysis" class="anchor" href="#practical-machine-learning-project-weight-lifting-exercises-activity-recognition-analysis" aria-hidden="true"><span class="octicon octicon-link"></span></a>Practical Machine Learning Project: Weight Lifting Exercises Activity Recognition Analysis</h1>
+<h4>
+<a id="alvaro-espinel" class="anchor" href="#alvaro-espinel" aria-hidden="true"><span class="octicon octicon-link"></span></a><em>Alvaro Espinel</em>
+</h4>
+<h4>
+<a id="june-20-2015" class="anchor" href="#june-20-2015" aria-hidden="true"><span class="octicon octicon-link"></span></a><em>June 20, 2015</em>
+</h4>
+</div>
+
+<div id="executive-summary">
+<h1>
+<a id="executive-summary" class="anchor" href="#executive-summary" aria-hidden="true"><span class="octicon octicon-link"></span></a>Executive Summary</h1>
+<p>Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement - a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, and perhaps, they are also data-scientists. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it.</p>
+<p>In this project, is used data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants to predict the manner in which they did the exercise.This is an attempt to assess whether it is possible identify mistakes in weight-lifting exercise activities. The original data set used in this analysis was generously made available by the author of the paper [1], which is on âQualitative Activity Recognition of Weight Lifting Exercisesâ. The model point out that mistakes depends a lot on how is collected, suggesting the relvance of a supervisor to guide the volunteers in a standard procedure. Under this condition, the analysis shows that using machine learning algorithm is a good approach to identifying mistakes in weight-lifting with very high accuracy.</p>
+</div>
+
+<div id="libraries-used-in-r">
+<h1>
+<a id="libraries-used-in-r" class="anchor" href="#libraries-used-in-r" aria-hidden="true"><span class="octicon octicon-link"></span></a>Libraries used in R</h1>
+<pre><code>library(caret)
+library(kernlab)
+library(randomForest)
+library(corrplot)
+library(rpart)
+library(rpart.plot)
+library(knitr)</code></pre>
+</div>
+
+<div id="loading-data-and-preprocessing">
+<h1>
+<a id="loading-data-and-preprocessing" class="anchor" href="#loading-data-and-preprocessing" aria-hidden="true"><span class="octicon octicon-link"></span></a>Loading data and preprocessing</h1>
+<p>Two csv files with the training and test data was downloaded into a data folder in the working directory /data.</p>
+<pre><code># check if a data folder exists; if not then create one
+if (!file.exists("data")) {dir.create("data")}
+
+# file URL and destination file
+fileUrl1 &lt;- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+destfile1 &lt;- "./data/pml-training.csv"
+fileUrl2 &lt;- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+destfile2 &lt;- "./data/pml-testing.csv"
+
+# download the file and note the time
+dateDownloaded &lt;- date()</code></pre>
+<p>The training data was then loaded into R.</p>
+<pre><code># read the csv file for training 
+data_training &lt;- read.csv("./data/pml-training.csv", na.strings= c("NA",""," "))</code></pre>
+<p>Missing (NA) values in the data were removed from the data set. The first eight columns that acted as identifiers for the experiment were also removed.</p>
+<pre><code># clean the data by removing columns with NAs etc
+data_training_NAs &lt;- apply(data_training, 2, function(x) {sum(is.na(x))})
+data_training_clean &lt;- data_training[,which(data_training_NAs == 0)]
+
+# remove identifier columns such as name, timestamps etc
+data_training_clean &lt;- data_training_clean[8:length(data_training_clean)]</code></pre>
+</div>
+
+<div id="creating-a-model">
+<h1>
+<a id="creating-a-model" class="anchor" href="#creating-a-model" aria-hidden="true"><span class="octicon octicon-link"></span></a>Creating a model</h1>
+<p>The test data set was split up into training and cross validation sets in a 70:30 ratio in order to train the model and then test it against data it was not specifically fitted to.</p>
+<pre><code># split the cleaned testing data into training and cross validation
+inTrain &lt;- createDataPartition(y = data_training_clean$classe, p = 0.7, list = FALSE)
+training &lt;- data_training_clean[inTrain, ]
+crossval &lt;- data_training_clean[-inTrain, ]</code></pre>
+<p>A random forest model was selected to predict the classification because it has methods for balancing error in class population unbalanced data sets. The correlation between any two trees in the forest increases the forest error rate. Therefore, a correllation plot was produced in order to see how strong the variables relationships are with each other see figure 1.</p>
+<p>In this type of plot the dark red and blue colours indicate a highly negative and positive relationship respectively between the variables. There isnât much concern for highly correlated predictors which means that all of them can be included in the model.</p>
+<p>Then a model was fitted with the outcome set to the training class and all the other variables used to predict.</p>
+<pre><code># fit a model to predict the classe using everything else as a predictor
+model &lt;- randomForest(classe ~ ., data = training)
+model</code></pre>
+<pre><code>## 
+## Call:
+##  randomForest(formula = classe ~ ., data = training) 
+##                Type of random forest: classification
+##                      Number of trees: 500
+## No. of variables tried at each split: 7
+## 
+##         OOB estimate of  error rate: 0.52%
+## Confusion matrix:
+##      A    B    C    D    E  class.error
+## A 3903    2    0    0    1 0.0007680492
+## B   13 2638    7    0    0 0.0075244545
+## C    0   13 2378    5    0 0.0075125209
+## D    0    0   21 2229    2 0.0102131439
+## E    0    0    1    6 2518 0.0027722772</code></pre>
+<p>The model produced a very small OOB error rate of .56%. This was satisfactory to progress the testing.</p>
+</div>
+
+<div id="cross-validation">
+<h1>
+<a id="cross-validation" class="anchor" href="#cross-validation" aria-hidden="true"><span class="octicon octicon-link"></span></a>Cross-validation</h1>
+<p>The model was then used to classify the remaining 30% of data. The results were placed in a confusion matrix along with the actual classifications in order to determine the accuracy of the model.</p>
+<pre><code># crossvalidate the model using the remaining 30% of data
+predictCrossVal &lt;- predict(model, crossval)
+cv_summary &lt;- confusionMatrix(crossval$classe, predictCrossVal)
+cv_summary</code></pre>
+<pre><code>## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction    A    B    C    D    E
+##          A 1674    0    0    0    0
+##          B    4 1133    2    0    0
+##          C    0    3 1018    5    0
+##          D    0    0    6  957    1
+##          E    0    0    1    3 1078
+## 
+## Overall Statistics
+##                                           
+##                Accuracy : 0.9958          
+##                  95% CI : (0.9937, 0.9972)
+##     No Information Rate : 0.2851          
+##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16       
+##                                           
+##                   Kappa : 0.9946          
+##  Mcnemar's Test P-Value : NA              
+## 
+## Statistics by Class:
+## 
+##                      Class: A Class: B Class: C Class: D Class: E
+## Sensitivity            0.9976   0.9974   0.9912   0.9917   0.9991
+## Specificity            1.0000   0.9987   0.9984   0.9986   0.9992
+## Pos Pred Value         1.0000   0.9947   0.9922   0.9927   0.9963
+## Neg Pred Value         0.9991   0.9994   0.9981   0.9984   0.9998
+## Prevalence             0.2851   0.1930   0.1745   0.1640   0.1833
+## Detection Rate         0.2845   0.1925   0.1730   0.1626   0.1832
+## Detection Prevalence   0.2845   0.1935   0.1743   0.1638   0.1839
+## Balanced Accuracy      0.9988   0.9980   0.9948   0.9951   0.9991</code></pre>
+<p>This model yielded a 99.3% prediction accuracy. Again, this model proved very robust and adequete to predict new data.</p>
+</div>
+
+<div id="predictions">
+<h1>
+<a id="predictions" class="anchor" href="#predictions" aria-hidden="true"><span class="octicon octicon-link"></span></a>Predictions</h1>
+<p>A separate data set was then loaded into R and cleaned in the same manner as before. The model was then used to predict the classifications of the 20 results of this new data.</p>
+<pre><code># apply the same treatment to the final testing data
+data_test &lt;- read.csv("./data/pml-testing.csv", na.strings= c("NA",""," "))
+data_test_NAs &lt;- apply(data_test, 2, function(x) {sum(is.na(x))})
+data_test_clean &lt;- data_test[,which(data_test_NAs == 0)]
+data_test_clean &lt;- data_test_clean[8:length(data_test_clean)]
+
+# predict the classes of the test set
+predictTest &lt;- predict(model, data_test_clean)
+predictTest</code></pre>
+<pre><code>##  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 
+##  B  A  B  A  A  E  D  B  A  A  B  C  B  A  E  E  A  B  B  B 
+## Levels: A B C D E</code></pre>
+</div>
+
+<div id="conclusions">
+<h1>
+<a id="conclusions" class="anchor" href="#conclusions" aria-hidden="true"><span class="octicon octicon-link"></span></a>Conclusions</h1>
+<p>The model we come up with to identify mistakes depends a lot on how we collect the data, which is that we need a supervisor to guide the volunteers in a uniform manner. Under this condition, the analysis shows that using machine learning algorithm is a good approach to identifying mistakes in weight-lifting with very high accuracy of 99.75%.</p>
+</div>
+
+<div id="references">
+<h1>
+<a id="references" class="anchor" href="#references" aria-hidden="true"><span class="octicon octicon-link"></span></a>References</h1>
+<p>[1] Ugulino, W.; Cardador, D.; Vega, K.; Velloso, E.; Milidiu, R.; Fuks, H. Wearable Computing: Accelerometersâ Data Classification of Body Postures and Movements. Proceedings of 21st Brazilian Symposium on Artificial Intelligence. Advances in Artificial Intelligence - SBIA 2012. In: Lecture Notes in Computer Science. , pp.Â 52-61. Curitiba, PR: Springer Berlin / Heidelberg, 2012. ISBN 978-3-642-34458-9. DOI: 10.1007/978-3-642-34459-6_6.</p>
+<div id="addendum-figures">
+<h2>
+<a id="addendum-figures" class="anchor" href="#addendum-figures" aria-hidden="true"><span class="octicon octicon-link"></span></a>Addendum: Figures</h2>
+<p>Figure 1. Correlation Matrix</p>
+<pre><code># plot a correlation matrix
+correlMatrix &lt;- cor(training[, -length(training)])
+corrplot(correlMatrix, order = "FPC", method = "circle", type = "lower", tl.cex = 0.8,  tl.col = rgb(0, 0, 0))</code></pre>
+<p><img title alt width="672"></p>
+<p>Figure 2. Dendrogram where each node is an activity</p>
+<pre><code>treeModel &lt;- rpart(classe ~ ., data=training, method="class")
+prp(treeModel) </code></pre>
+<p><img title alt width="672"></p>
+</div>
+
+<p></p>
+</div>
+
+<p></p>
+</div>
+
+
+
+
+
+
+
+<p>
+</p>
+
+      <footer class="site-footer">
+        <span class="site-footer-owner"><a href="https://github.com/aespinel/MachineLearning">Machinelearning</a> is maintained by <a href="https://github.com/aespinel">aespinel</a>.</span>
+
+        <span class="site-footer-credits">This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the <a href="https://github.com/jasonlong/cayman-theme">Cayman theme</a> by <a href="https://twitter.com/jasonlong">Jason Long</a>.</span>
+      </footer>
+
+    </section>
+
+  
+  </body>
+</html>
+
